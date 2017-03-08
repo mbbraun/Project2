@@ -16,6 +16,7 @@ import requests
 import tweepy
 import twitter_info # Requires you to have a twitter_info file in this directory
 from bs4 import BeautifulSoup
+import re
 
 ## Tweepy authentication setup
 ## Fill these in in the twitter_info.py file
@@ -52,10 +53,15 @@ except:
 ## find_urls("I love looking at websites like http://etsy.com and http://instagram.com and stuff") should return ["http://etsy.com","http://instagram.com"]
 ## find_urls("the internet is awesome #worldwideweb") should return [], empty list
 
-# def find_urls(strng):
+def find_urls(strng):
+
+	lst_of_strngs =[]
+	return re.findall("(?:http|https):\/\/.*\...\S+", strng)
 
 
 
+print (find_urls("http://www.google.com is a great site"))
+print (find_urls("I love looking at websites like http://etsy.com and http://instagram.com and stuff"))
 
 ## PART 2 (a) - Define a function called get_umsi_data.
 ## INPUT: N/A. No input.
@@ -67,8 +73,25 @@ except:
 ## Start with this page: https://www.si.umich.edu/directory?field_person_firstname_value=&field_person_lastname_value=&rid=All  
 ## End with this page: https://www.si.umich.edu/directory?field_person_firstname_value=&field_person_lastname_value=&rid=All&page=11 
 
-# def get_umsi_data():
-# 	try 
+def get_umsi_data():
+	if "umsi_directory_data" in CACHE_DICTION:
+		return CACHE_DICTION["umsi_directory_data"]
+	else:
+		response = []
+		html_strngs = []
+		response.append(requests.get("https://www.si.umich.edu/directory?field_person_firstname_value=&field_person_lastname_value=&rid=All",headers = {'User-Agent': 'SI_CLASS'}))
+		for i in range(1,12):
+			response.append(requests.get("https://www.si.umich.edu/directory?field_person_firstname_value=&field_person_lastname_value=&rid=All&page="+str(i),headers = {'User-Agent': 'SI_CLASS'}))
+		
+		for page in response:
+			soup = BeautifulSoup(page.text, "html.parser")
+			html_strngs.append(soup)
+		CACHE_DICTION["umsi_directory_data"] = html_strngs
+	return CACHE_DICTION["umsi_directory_data"]
+
+
+
+
 
 
 
@@ -77,7 +100,12 @@ except:
 ## PART 2 (b) - Create a dictionary saved in a variable umsi_titles 
 ## whose keys are UMSI people's names, and whose associated values are those people's titles, e.g. "PhD student" or "Associate Professor of Information"...
 
+umsi_titles = {}
 
+for page in get_umsi_data():
+	people = page.find_all("div",{"class":"views-row"})
+	for person in people:
+		umsi_titles[person.find("div",{"property":"dc:title"}).h2.text] = person.find("div",{"class": "field field-name-field-person-titles field-type-text field-label-hidden"}).find("div", {"class": "field-item even"}).text
 
 
 
@@ -105,7 +133,7 @@ def get_five_tweets(search):
 
 	tweet_texts = []
 	for tweet in twitter_results['statuses']:
-		tweet_texts.appens(tweet["text"])
+		tweet_texts.append(tweet["text"])
 	return tweet_texts[:5]
 
 
@@ -117,11 +145,11 @@ def get_five_tweets(search):
 
 ## PART 3 (b) - Write one line of code to invoke the get_five_tweets function with the phrase "University of Michigan" and save the result in a variable five_tweets.
 
-five_tweets = get_five_tweets("University of Micigan")
+five_tweets = get_five_tweets("University of Michigan")
 
 
 ## PART 3 (c) - Iterate over the five_tweets list, invoke the find_urls function that you defined in Part 1 on each element of the list, and accumulate a new list of each of the total URLs in all five of those tweets in a variable called tweet_urls_found. 
-print ("Uncomment this code when you have sevice and have done the find_urls function")
+print ("Uncomment this code when you have service and have done the find_urls function")
 # tweet_urls_found = []
 # for tweet in five_tweets:
 # 	tweet_urls_found.append(find_urls(tweet))
