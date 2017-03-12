@@ -37,7 +37,7 @@ api = tweepy.API(auth, parser=tweepy.parsers.JSONParser())
 CACHE_FNAME = "206project2_caching.json"
 try:  
 	cache_file_obj = open(CACHE_FNAME, 'r')
-	cache_contencts = cache_file_obj.read()
+	cache_contents = cache_file_obj.read()
 	CACHE_DICTION = json.loads(cache_contents)
 except:
 	CACHE_DICTION = {}
@@ -54,14 +54,15 @@ except:
 ## find_urls("the internet is awesome #worldwideweb") should return [], empty list
 
 def find_urls(strng):
+	
+	lst_of_strngs = re.findall(r"https?:\/\/[A-Za-z0-9]{2,}(?:\.+[a-zA-Z0-9]{1,})+", strng)
+	return lst_of_strngs
 
-	lst_of_strngs =[]
-	return re.findall("(?:http|https):\/\/.*\...\S+", strng)
 
 
 
-print (find_urls("http://www.google.com is a great site"))
-print (find_urls("I love looking at websites like http://etsy.com and http://instagram.com and stuff"))
+# print (find_urls("http://www.google.com is a great site"))
+# print (find_urls("I love looking at websites like http://etsy.com and http://instagram.com and stuff"))
 
 ## PART 2 (a) - Define a function called get_umsi_data.
 ## INPUT: N/A. No input.
@@ -84,10 +85,12 @@ def get_umsi_data():
 			response.append(requests.get("https://www.si.umich.edu/directory?field_person_firstname_value=&field_person_lastname_value=&rid=All&page="+str(i),headers = {'User-Agent': 'SI_CLASS'}))
 		
 		for page in response:
-			soup = BeautifulSoup(page.text, "html.parser")
-			html_strngs.append(soup)
+			html_strngs.append(page.text)
 		CACHE_DICTION["umsi_directory_data"] = html_strngs
-	return CACHE_DICTION["umsi_directory_data"]
+		f = open(CACHE_FNAME, 'w')
+		f.write(json.dumps(CACHE_DICTION))
+		f.close()
+		return CACHE_DICTION["umsi_directory_data"]
 
 
 
@@ -103,7 +106,8 @@ def get_umsi_data():
 umsi_titles = {}
 
 for page in get_umsi_data():
-	people = page.find_all("div",{"class":"views-row"})
+	soup = BeautifulSoup(page, "html.parser")
+	people = soup.find_all("div",{"class":"views-row"})
 	for person in people:
 		umsi_titles[person.find("div",{"property":"dc:title"}).h2.text] = person.find("div",{"class": "field field-name-field-person-titles field-type-text field-label-hidden"}).find("div", {"class": "field-item even"}).text
 
@@ -146,13 +150,14 @@ def get_five_tweets(search):
 ## PART 3 (b) - Write one line of code to invoke the get_five_tweets function with the phrase "University of Michigan" and save the result in a variable five_tweets.
 
 five_tweets = get_five_tweets("University of Michigan")
-
+print (five_tweets)
 
 ## PART 3 (c) - Iterate over the five_tweets list, invoke the find_urls function that you defined in Part 1 on each element of the list, and accumulate a new list of each of the total URLs in all five of those tweets in a variable called tweet_urls_found. 
-print ("Uncomment this code when you have service and have done the find_urls function")
-# tweet_urls_found = []
-# for tweet in five_tweets:
-# 	tweet_urls_found.append(find_urls(tweet))
+tweet_urls_found = []
+for tweet in five_tweets:
+	print (tweet)
+	tweet_urls_found.append(find_urls(tweet))
+print (tweet_urls_found)
 
 
 
